@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gordex.ru — Telegram боты и сайты под ключ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;700;900&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0c0e;
+    --bg-2: #111114;
+    --bg-card: #16161a;
+    --bg-card-hover: #1c1c22;
+    --accent: #7c5cfc;
+    --accent-2: #a78bfa;
+    --accent-glow: rgba(124, 92, 252, 0.3);
+    --accent-glow-sm: rgba(124, 92, 252, 0.15);
+    --text: #f0eff5;
+    --text-muted: #8886a0;
+    --text-dim: #4a4860;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(124,92,252,0.4);
+    --radius: 14px;
+    --radius-lg: 20px;
+    --font-display: 'Unbounded', sans-serif;
+    --font-body: 'Manrope', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+
+  /* ─── NOISE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ─── GLOW ORBS ─── */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.3;
+  }
+  .orb-1 { width: 500px; height: 500px; background: var(--accent); top: -150px; left: -150px; animation: orb-drift 12s ease-in-out infinite alternate; }
+  .orb-2 { width: 350px; height: 350px; background: #3b82f6; bottom: 10%; right: -100px; animation: orb-drift 15s ease-in-out infinite alternate-reverse; }
+  @keyframes orb-drift {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(30px, 40px) scale(1.1); }
+  }
+
+  /* ─── NAVBAR ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 5vw;
+    height: 70px;
+    background: rgba(12,12,14,0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+  .nav-logo span { color: var(--accent); }
+
+  .nav-links {
+    display: flex; gap: 2.5rem; list-style: none; align-items: center;
+  }
+  .nav-links a {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  .nav-cta {
+    background: var(--accent) !important;
+    color: white !important;
+    padding: 0.5rem 1.2rem;
+    border-radius: 100px;
+    font-size: 0.82rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    transition: box-shadow 0.25s, transform 0.2s !important;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  .nav-cta:hover { box-shadow: 0 0 35px var(--accent-glow) !important; transform: translateY(-1px) !important; }
+
+  .burger {
+    display: none; flex-direction: column; gap: 5px;
+    cursor: pointer; background: none; border: none; padding: 4px;
+  }
+  .burger span { width: 24px; height: 2px; background: var(--text); border-radius: 2px; display: block; transition: all 0.3s; }
+  .burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .burger.open span:nth-child(2) { opacity: 0; }
+  .burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  .mobile-menu {
+    display: none; position: fixed; top: 70px; left: 0; right: 0;
+    background: var(--bg-card); border-bottom: 1px solid var(--border);
+    padding: 1.5rem 5vw 2rem; z-index: 99;
+    flex-direction: column; gap: 0;
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a {
+    font-size: 1rem; font-weight: 500; color: var(--text-muted);
+    text-decoration: none; padding: 1rem 0;
+    border-bottom: 1px solid var(--border); transition: color 0.2s;
+  }
+  .mobile-menu a:last-child { border-bottom: none; }
+  .mobile-menu a:hover { color: var(--text); }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 130px 5vw 80px;
+    max-width: 1100px; margin: 0 auto;
+    z-index: 2;
+  }
+
+  .hero-content { max-width: 700px; }
+
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent-2);
+    margin-bottom: 2rem;
+  }
+  .hero-tag::before {
+    content: '';
+    width: 8px; height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #22c55e;
+    animation: pulse-green 2s ease-in-out infinite;
+  }
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; box-shadow: 0 0 10px #22c55e; }
+    50% { opacity: 0.5; box-shadow: 0 0 4px #22c55e; }
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 6vw, 5rem);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+  }
+  h1 .accent { color: var(--accent); }
+  h1 .dim { color: var(--text-muted); font-weight: 300; }
+
+  .hero-desc {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 480px;
+    margin-bottom: 3rem;
+    font-weight: 400;
+  }
+
+  .hero-btns {
+    display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 4rem;
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-body);
+    font-size: 0.9rem; font-weight: 600;
+    color: white; background: var(--accent);
+    padding: 0.9rem 2rem; border-radius: 100px;
+    text-decoration: none;
+    box-shadow: 0 0 30px var(--accent-glow);
+    transition: box-shadow 0.3s, transform 0.2s;
+  }
+  .btn-primary:hover { box-shadow: 0 0 50px var(--accent-glow); transform: translateY(-2px); }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-body);
+    font-size: 0.9rem; font-weight: 500;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 0.9rem 2rem; border-radius: 100px;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s, transform 0.2s;
+  }
+  .btn-ghost:hover { border-color: var(--border-hover); color: var(--text); transform: translateY(-2px); }
+
+  .hero-stats {
+    display: flex; gap: 3rem; flex-wrap: wrap;
+  }
+  .stat { }
+  .stat-num {
+    font-family: var(--font-display);
+    font-size: 2rem; font-weight: 700;
+    color: var(--text); letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .stat-num span { color: var(--accent); }
+  .stat-label {
+    font-size: 0.75rem; font-weight: 500;
+    color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-top: 4px;
+  }
+
+  /* ─── DIVIDER ─── */
+  .divider { width: 100%; height: 1px; background: var(--border); }
+
+  /* ─── SECTIONS ─── */
+  .section {
+    position: relative; z-index: 2;
+    padding: 100px 5vw;
+    max-width: 1100px; margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.15em;
+    color: var(--accent); margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; max-width: 40px; height: 1px; background: var(--accent); opacity: 0.5;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 700; letter-spacing: -0.03em;
+    line-height: 1.1; color: var(--text);
+    margin-bottom: 1rem;
+  }
+
+  .section-desc {
+    font-size: 1rem; color: var(--text-muted);
+    line-height: 1.7; max-width: 480px;
+    margin-bottom: 3.5rem;
+  }
+
+  /* ─── SKILLS ─── */
+  .skills-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+  }
+
+  .skill-card {
+    background: var(--bg-card);
+    padding: 2.5rem 2rem;
+    transition: background 0.25s;
+    position: relative; overflow: hidden;
+  }
+  .skill-card:hover { background: var(--bg-card-hover); }
+  .skill-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .skill-card:hover::before { opacity: 1; }
+
+  .skill-icon {
+    font-size: 2rem; margin-bottom: 1.25rem;
+    filter: grayscale(0.3);
+  }
+  .skill-name {
+    font-family: var(--font-display);
+    font-size: 0.95rem; font-weight: 600;
+    color: var(--text); margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
+  }
+  .skill-desc {
+    font-size: 0.875rem; color: var(--text-muted); line-height: 1.65;
+  }
+
+  /* ─── PROJECTS ─── */
+  .projects-list { display: flex; flex-direction: column; gap: 1px; }
+
+  .project-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem 2.25rem;
+    display: flex; align-items: flex-start; gap: 2rem;
+    transition: background 0.25s, border-color 0.25s, transform 0.25s;
+    text-decoration: none; color: inherit;
+    margin-bottom: 1rem;
+    position: relative; overflow: hidden;
+  }
+  .project-item::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--accent-glow-sm) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .project-item:hover { background: var(--bg-card-hover); border-color: var(--border-hover); transform: translateX(4px); }
+  .project-item:hover::after { opacity: 1; }
+
+  .project-num {
+    font-family: var(--font-display);
+    font-size: 0.7rem; font-weight: 700;
+    color: var(--text-dim); letter-spacing: 0.1em;
+    padding-top: 4px; flex-shrink: 0; width: 32px;
+  }
+
+  .project-emoji {
+    font-size: 2.2rem; flex-shrink: 0;
+    width: 54px; height: 54px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(124,92,252,0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(124,92,252,0.15);
+  }
+
+  .project-body { flex: 1; }
+  .project-type {
+    font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent); margin-bottom: 0.4rem;
+  }
+  .project-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem; font-weight: 600;
+    color: var(--text); margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+  .project-desc {
+    font-size: 0.875rem; color: var(--text-muted); line-height: 1.6;
+  }
+
+  .project-arrow {
+    font-size: 1.2rem; color: var(--text-dim);
+    transition: color 0.2s, transform 0.2s; flex-shrink: 0;
+    align-self: center;
+  }
+  .project-item:hover .project-arrow { color: var(--accent); transform: translate(4px, -4px); }
+
+  .project-soon {
+    pointer-events: none; opacity: 0.4;
+  }
+  .soon-badge {
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.3rem 0.8rem; border-radius: 100px;
+    flex-shrink: 0; align-self: center;
+  }
+
+
+
+  /* ─── SERVICES ─── */
+  .services-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;
+  }
+  .svc {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    transition: border-color 0.25s, background 0.25s, transform 0.25s;
+    position: relative; overflow: hidden;
+  }
+  .svc:hover { border-color: var(--border-hover); background: var(--bg-card-hover); transform: translateY(-3px); }
+  .svc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+  .svc-icon { font-size: 1.5rem; }
+  .svc-price {
+    font-size: 0.78rem; font-weight: 700;
+    color: var(--accent); background: var(--accent-glow-sm);
+    border: 1px solid rgba(124,92,252,0.2);
+    padding: 0.25rem 0.7rem; border-radius: 100px;
+  }
+  .svc-badge {
+    font-size: 0.72rem; font-weight: 700;
+    color: #f59e0b; background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.2);
+    padding: 0.25rem 0.7rem; border-radius: 100px;
+  }
+  .svc-name {
+    font-family: var(--font-display);
+    font-size: 0.95rem; font-weight: 600;
+    color: var(--text); margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+  .svc-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+
+  /* ─── CONTACT ─── */
+  .contact-section {
+    position: relative; z-index: 2;
+    padding: 100px 5vw;
+    max-width: 1100px; margin: 0 auto;
+  }
+
+  .contact-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: start;
+  }
+
+  .contact-headline {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4.5vw, 3.8rem);
+    font-weight: 900;
+    line-height: 1.05; letter-spacing: -0.03em;
+    color: var(--text); margin-bottom: 1.5rem;
+  }
+  .contact-headline .glow { color: var(--accent); text-shadow: 0 0 40px var(--accent-glow); }
+
+  .contact-text {
+    font-size: 1rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 0;
+  }
+
+  .contact-links { display: flex; flex-direction: column; gap: 0.75rem; }
+
+  .contact-link {
+    display: flex; align-items: center; gap: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-decoration: none; color: inherit;
+    transition: border-color 0.25s, background 0.25s, transform 0.2s;
+  }
+  .contact-link:hover { border-color: var(--border-hover); background: var(--bg-card-hover); transform: translateX(6px); }
+
+  .contact-link-icon {
+    width: 42px; height: 42px;
+    background: rgba(124,92,252,0.1);
+    border: 1px solid rgba(124,92,252,0.15);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+  .contact-link-info strong {
+    display: block; font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 2px;
+  }
+  .contact-link-info span { font-size: 0.95rem; font-weight: 500; color: var(--text); }
+  .contact-link-arrow { margin-left: auto; color: var(--text-dim); font-size: 0.9rem; transition: color 0.2s, transform 0.2s; }
+  .contact-link:hover .contact-link-arrow { color: var(--accent); transform: translate(3px, -3px); }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative; z-index: 2;
+    border-top: 1px solid var(--border);
+    padding: 2rem 5vw;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  }
+  .footer-logo {
+    font-family: var(--font-display);
+    font-size: 0.95rem; font-weight: 700;
+    color: var(--text); text-decoration: none;
+  }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 0.78rem; color: var(--text-dim); }
+
+  /* ─── ANIMATIONS ─── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1);
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+  .d1 { transition-delay: 0.1s; }
+  .d2 { transition-delay: 0.2s; }
+  .d3 { transition-delay: 0.3s; }
+  .d4 { transition-delay: 0.4s; }
+
+  /* ─── SOCIAL SECTION ─── */
+  .social-section {
+    position: relative; z-index: 2;
+    padding: 100px 5vw;
+    background: var(--bg-2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .social-inner { max-width: 1100px; margin: 0 auto; }
+  .social-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;
+    margin-top: 2.5rem;
+  }
+  .social-card {
+    display: flex; align-items: center; gap: 1.25rem;
+    padding: 1.5rem 1.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-decoration: none; color: inherit;
+    transition: border-color 0.25s, background 0.25s, transform 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .social-card:hover { border-color: var(--border-hover); background: var(--bg-card-hover); transform: translateY(-3px); }
+  .social-card-icon {
+    width: 50px; height: 50px; flex-shrink: 0;
+    background: rgba(124,92,252,0.1);
+    border: 1px solid rgba(124,92,252,0.15);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+  }
+  .social-card-info { flex: 1; }
+  .social-card-info strong {
+    display: block; font-family: var(--font-display);
+    font-size: 0.85rem; font-weight: 600;
+    color: var(--text); margin-bottom: 3px; letter-spacing: -0.01em;
+  }
+  .social-card-info span { font-size: 0.82rem; color: var(--text-muted); }
+  .social-card-arrow { color: var(--text-dim); font-size: 0.9rem; transition: color 0.2s, transform 0.2s; }
+  .social-card:hover .social-card-arrow { color: var(--accent); transform: translate(3px, -3px); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 900px) {
+    .contact-grid { grid-template-columns: 1fr; gap: 3rem; }
+  }
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .burger { display: flex; }
+    .hero { padding: 110px 5vw 60px; }
+    .hero-stats { gap: 2rem; }
+    .section { padding: 70px 5vw; }
+    .contact-section { padding: 70px 5vw; }
+    .social-section { padding: 70px 5vw; }
+    .skills-grid { grid-template-columns: 1fr; }
+    .services-grid { grid-template-columns: 1fr; }
+    .social-grid { grid-template-columns: 1fr; }
+    /* fix project cards on mobile */
+    .project-item {
+      padding: 1.25rem 1rem;
+      gap: 0.9rem;
+    }
+    .project-num { display: none; }
+    .project-emoji {
+      width: 42px; height: 42px; font-size: 1.5rem; flex-shrink: 0;
+    }
+    .project-name { font-size: 0.9rem; }
+    .project-desc { font-size: 0.8rem; }
+    .project-arrow { font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+
+<!-- GLOW ORBS -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">gordex<span>.</span>ru</a>
+  <ul class="nav-links">
+    <li><a href="#skills">Навыки</a></li>
+    <li><a href="#projects">Проекты</a></li>
+    <li><a href="#social">Соц сети</a></li>
+    <li><a href="#contact" class="nav-cta">Написать →</a></li>
+  </ul>
+  <button class="burger" id="burger" aria-label="Меню">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#skills" onclick="closeMobile()">Навыки</a>
+  <a href="#projects" onclick="closeMobile()">Проекты</a>
+  <a href="#social" onclick="closeMobile()">Соц сети</a>
+  <a href="#contact" onclick="closeMobile()">Написать →</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-content">
+    <div class="hero-tag reveal">Открыт к заказам</div>
+    <h1 class="reveal d1">
+      gordex<span class="accent">.</span>ru<br>
+      <span class="dim">разработчик</span>
+    </h1>
+    <p class="hero-desc reveal d2">
+      Создаю Telegram боты, сайты-визитки и многостраничные сайты. Быстро, аккуратно и без лишнего.
+    </p>
+    <div class="hero-btns reveal d3">
+      <a href="#projects" class="btn-primary">Рабочие проекты</a>
+      <a href="#contact" class="btn-ghost">Связаться</a>
+    </div>
+    <div class="hero-stats reveal d4">
+      <div class="stat">
+        <div class="stat-num">6<span>+</span></div>
+        <div class="stat-label">Типов услуг</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">3<span>+</span></div>
+        <div class="stat-label">Направления</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">24<span>ч</span></div>
+        <div class="stat-label">Время ответа</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SKILLS -->
+<section class="section" id="skills">
+  <div class="section-label reveal">Навыки</div>
+  <h2 class="section-title reveal d1">Что умею</h2>
+  <p class="section-desc reveal d2">Полный цикл разработки — от идеи до запуска.</p>
+
+  <div class="skills-grid reveal d3">
+    <div class="skill-card">
+      <div class="svc-top" style="margin-bottom:1.25rem;"><div class="skill-icon" style="margin:0;">🌐</div><span class="svc-price">от 1 000 ₽</span></div>
+      <div class="skill-name">Сайты</div>
+      <div class="skill-desc">Создание сайтов с адаптивным дизайном, анимациями и JavaScript функционалом. Лендинги, визитки, многостраничники.</div>
+    </div>
+    <div class="skill-card">
+      <div class="svc-top" style="margin-bottom:1.25rem;"><div class="skill-icon" style="margin:0;">🎨</div><span class="svc-price">от 2 000 ₽</span></div>
+      <div class="skill-name">Дизайн</div>
+      <div class="skill-desc">Проектирование интерфейсов с фокусом на удобство, визуальную привлекательность и пользовательский опыт.</div>
+    </div>
+    <div class="skill-card">
+      <div class="svc-top" style="margin-bottom:1.25rem;"><div class="skill-icon" style="margin:0;">🤖</div><span class="svc-price">от 5 000 ₽</span></div>
+      <div class="skill-name">Боты</div>
+      <div class="skill-desc">Разработка Telegram ботов на aiogram, работа с базами данных, API, системы рассылок и автоматизированные решения для бизнеса.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PROJECTS -->
+<section class="section" id="projects">
+  <div class="section-label reveal">Проекты</div>
+  <h2 class="section-title reveal d1">Рабочие проекты</h2>
+  <p class="section-desc reveal d2">Часть реализованного. Новые проекты появятся здесь по мере завершения.</p>
+
+  <div class="projects-list">
+
+    <a class="project-item reveal" href="https://t.me/FAMELONOV_bot" target="_blank" rel="noopener">
+      <div class="project-num">01</div>
+      <div class="project-emoji">💎</div>
+      <div class="project-body">
+        <div class="project-type">Telegram Bot</div>
+        <div class="project-name">Бот-портфолио разработчика</div>
+        <div class="project-desc">Telegram-бот с разделами: обо мне, услуги, портфолио, FAQ и форма для приёма заявок от клиентов.</div>
+      </div>
+      <div class="project-arrow">↗</div>
+    </a>
+
+    <a class="project-item reveal d1" href="#services">
+      <div class="project-num">02</div>
+      <div class="project-emoji">🛒</div>
+      <div class="project-body">
+        <div class="project-type">Telegram Bot</div>
+        <div class="project-name">Бот-магазин</div>
+        <div class="project-desc">Индивидуальный магазин товаров в Telegram с приёмом оплаты и административной панелью.</div>
+      </div>
+      <div class="project-arrow">↗</div>
+    </a>
+
+    <div class="project-item project-soon reveal d2">
+      <div class="project-num">03</div>
+      <div class="project-emoji">✦</div>
+      <div class="project-body">
+        <div class="project-type" style="color:var(--text-dim);">В разработке</div>
+        <div class="project-name" style="color:var(--text-muted);">Новый проект</div>
+        <div class="project-desc">Скоро появится здесь. Следите за обновлениями.</div>
+      </div>
+      <span class="soon-badge">Скоро</span>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+
+<!-- CONTACT -->
+<div class="contact-section" id="contact">
+  <div class="contact-grid">
+    <div>
+      <div class="section-label reveal">Контакты</div>
+      <div class="contact-headline reveal d1">
+        Есть<br>идея?<br><span class="glow">Обсудим.</span>
+      </div>
+      <p class="contact-text reveal d2">
+        Расскажите о своём проекте — отвечу быстро и предложу решение под ваш бюджет.
+      </p>
+    </div>
+
+    <div class="contact-links reveal d1">
+      <a class="contact-link" href="https://max.ru/u/f9LHodD0cOIJavLdH0-BcX9kj5A-6uxyFqHddxP04zdiLW-HMV_YhxB7nnc" target="_blank" rel="noopener">
+        <div class="contact-link-icon">🚀</div>
+        <div class="contact-link-info">
+          <strong>Макс</strong>
+          <span>Написать в Макс</span>
+        </div>
+        <span class="contact-link-arrow">↗</span>
+      </a>
+      <a class="contact-link" href="https://t.me/FAMELONOV" target="_blank" rel="noopener">
+        <div class="contact-link-icon">✈️</div>
+        <div class="contact-link-info">
+          <strong>Telegram</strong>
+          <span>@FAMELONOV</span>
+        </div>
+        <span class="contact-link-arrow">↗</span>
+      </a>
+      <a class="contact-link" href="mailto:gordexdev@mail.ru">
+        <div class="contact-link-icon">📧</div>
+        <div class="contact-link-info">
+          <strong>Email</strong>
+          <span>gordexdev@mail.ru</span>
+        </div>
+        <span class="contact-link-arrow">↗</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- SOCIAL -->
+<div class="social-section" id="social">
+  <div class="social-inner">
+    <div class="section-label reveal">Соц сети</div>
+    <h2 class="section-title reveal d1">Подписывайся</h2>
+    <p class="section-desc reveal d2" style="margin-bottom:0;">Слежу за трендами, делюсь проектами и публикую обновления.</p>
+    <div class="social-grid">
+      <a class="social-card reveal d1" href="https://t.me/gordex_dev" target="_blank" rel="noopener">
+        <div class="social-card-icon">📢</div>
+        <div class="social-card-info">
+          <strong>Telegram канал</strong>
+          <span>@gordex_dev</span>
+        </div>
+        <span class="social-card-arrow">↗</span>
+      </a>
+      <a class="social-card reveal d2" href="https://max.ru/u/f9LHodD0cOIJavLdH0-BcX9kj5A-6uxyFqHddxP04zdiLW-HMV_YhxB7nnc" target="_blank" rel="noopener">
+        <div class="social-card-icon">🚀</div>
+        <div class="social-card-info">
+          <strong>Макс канал</strong>
+          <span>Канал в Макс</span>
+        </div>
+        <span class="social-card-arrow">↗</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <a href="#" class="footer-logo">gordex<span>.</span>ru</a>
+  <p>© 2025 gordex.ru — Telegram боты и сайты</p>
+  <p>Разработка под ключ</p>
+</footer>
+
+<script>
+  // Burger
+  const burger = document.getElementById('burger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  burger.addEventListener('click', () => {
+    burger.classList.toggle('open');
+    mobileMenu.classList.toggle('open');
+  });
+  function closeMobile() {
+    burger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+  }
+
+  // Reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  reveals.forEach(el => obs.observe(el));
+  setTimeout(() => {
+    document.querySelectorAll('.hero .reveal').forEach(el => el.classList.add('visible'));
+  }, 80);
+</script>
+</body>
+</html>
